@@ -62,8 +62,14 @@ def get(remote: bool = True) -> None:
 
             start_time = datetime.datetime(
                 now.year, now.month, now.day, start_h, start_m) - modifier
-            finish_time = datetime.datetime(
-                now.year, now.month, now.day, end_h, end_m) - modifier
+
+            if end_h < start_h:
+                # Edgecase, most likely we're looking at an evening -> morning task, e.g. sleep 23:00 -> 0:00
+                finish_time = datetime.datetime(
+                    now.year, now.month, now.day, end_h, end_m) - modifier + datetime.timedelta(days=1)
+            else:
+                finish_time = datetime.datetime(
+                    now.year, now.month, now.day, end_h, end_m) - modifier
 
             if start_time <= now and finish_time > now:
                 # Found it!
@@ -72,7 +78,8 @@ def get(remote: bool = True) -> None:
                     ["Task", line["name"]],
                     ["Start time", line["start_time"]],
                     ["Finish time", line["finish_time"]],
-                    ["Comment", line["comment"]],
+                    ["Comment", line["comment"]
+                        if line["comment"] is not None else "--"],
                 ],
                     tablefmt="simple_grid",
                     # 23 is the max width at which iSh view doesn't overflow together with 'headers column'
