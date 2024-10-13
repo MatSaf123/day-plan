@@ -1,8 +1,6 @@
 import csv
 import sys
-
-from datetime import datetime
-from zoneinfo import ZoneInfo
+import datetime
 
 from tabulate import tabulate
 
@@ -42,7 +40,7 @@ def get(remote: bool = True) -> None:
         reader = csv.DictReader(f, delimiter=",")
 
         # Iterate over plan entries and find the one for the current time
-        now = datetime.now(ZoneInfo("Europe/Warsaw"))
+        now = datetime.datetime.utcnow()
         for line in reader:
 
             # Extract hours and minutes
@@ -51,10 +49,13 @@ def get(remote: bool = True) -> None:
             end_h = int(line["end_time"][0:2])
             end_m = int(line["end_time"][3:5])
 
-            start_time = datetime(
-                now.year, now.month, now.day, start_h, start_m, now.second, now.microsecond, tzinfo=ZoneInfo("Europe/Warsaw"),)
-            end_time = datetime(
-                now.year, now.month, now.day, end_h, end_m, now.second, now.microsecond, tzinfo=ZoneInfo("Europe/Warsaw"),)
+            # Modifier to be added to the time in file (CEST) in order to turn it into UTC
+            modif = datetime.timedelta(hours=2)
+
+            start_time = datetime.datetime(
+                now.year, now.month, now.day, start_h, start_m) - modif
+            end_time = datetime.datetime(
+                now.year, now.month, now.day, end_h, end_m) - modif
 
             if start_time <= now and end_time > now:
                 # Found it!
