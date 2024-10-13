@@ -6,7 +6,6 @@ mdurl==0.1.2
 mypy==1.11.2
 mypy-extensions==1.0.0
 packaging==24.1
-pydantic==2.9.2
 pydantic_core==2.23.4
 Pygments==2.18.0
 pyinstaller-hooks-contrib==2024.8
