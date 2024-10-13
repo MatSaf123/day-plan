@@ -1,15 +1,12 @@
-import typer
 import csv
+import sys
+import datetime
 
 from tabulate import tabulate
-from datetime import datetime
 
 DAY_PLAN_FILEPATH = "plan.csv"
 
-app = typer.Typer()
 
-
-@app.command()
 def get_all(remote: bool = True) -> None:
     """Reads and prints all entries for today.
     If it's a work day, assumes it's remote-day by default.
@@ -23,12 +20,19 @@ def get_all(remote: bool = True) -> None:
     entries = []
     with open(DAY_PLAN_FILEPATH, "r") as f:
         csv_reader = csv.reader(f, delimiter=",")
+        entries = []
+        # Skip the header line
+        next(csv_reader)
+        # We're displaying only name of the task and combined time to save screen space
         for line in csv_reader:
-            entries.append(line)
-    print(tabulate(entries, headers='firstrow', tablefmt='fancy_grid'))
+            name = line[0]
+            combined_date = f"{line[1]}-{line[2]}"
+            entries.append([name, combined_date])
+    print(tabulate(entries, headers=["Task", "Time"], tablefmt='simple_grid',
+                   maxcolwidths=[23, None],
+                   ))
 
 
-@app.command()
 def get(remote: bool = True) -> None:
     """Reads the day plan entry based on the current time.
     If it's a work day, assumes it's remote-day by default.
@@ -43,25 +47,38 @@ def get(remote: bool = True) -> None:
         reader = csv.DictReader(f, delimiter=",")
 
         # Iterate over plan entries and find the one for the current time
-        now = datetime.now()
+        now = datetime.datetime.utcnow()
         for line in reader:
 
             # Extract hours and minutes
             start_h = int(line["start_time"][0:2])
             start_m = int(line["start_time"][3:5])
-            end_h = int(line["end_time"][0:2])
-            end_m = int(line["end_time"][3:5])
+            end_h = int(line["finish_time"][0:2])
+            end_m = int(line["finish_time"][3:5])
 
-            start_time = datetime(
-                now.year, now.month, now.day, start_h, start_m)
-            end_time = datetime(
-                now.year, now.month, now.day, end_h, end_m)
+            # Modifier to be added to the time in file (CEST) in order to turn it into UTC.
+            # This is required because iSh does weird things and returns UTC for `dt.now()`
+            modifier = datetime.timedelta(hours=2)
 
-            if start_time <= now and end_time > now:
+            start_time = datetime.datetime(
+                now.year, now.month, now.day, start_h, start_m) - modifier
+            finish_time = datetime.datetime(
+                now.year, now.month, now.day, end_h, end_m) - modifier
+
+            if start_time <= now and finish_time > now:
                 # Found it!
-                print(tabulate([line.keys(), line.values()],
-                               headers="firstrow",
-                      tablefmt='fancy_grid'))
+                # We're transposing the table here: keys are in first column, values in the second
+                print(tabulate([
+                    ["Task", line["name"]],
+                    ["Start time", line["start_time"]],
+                    ["Finish time", line["finish_time"]],
+                    ["Comment", line["comment"]],
+                ],
+                    tablefmt="simple_grid",
+                    # 23 is the max width at which iSh view doesn't overflow together with 'headers column'
+                    maxcolwidths=[None, 23],
+                ))
+
                 break
         else:
             raise Exception(
@@ -69,4 +86,10 @@ def get(remote: bool = True) -> None:
 
 
 if __name__ == "__main__":
-    app()
+    func_name = sys.argv[1]
+    if func_name == "get":
+        get()
+    elif func_name == "get-all":
+        get_all()
+    else:
+        raise Exception(f"Unexpected option passed: {func_name}")
