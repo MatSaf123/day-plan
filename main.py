@@ -4,6 +4,8 @@ import csv
 from tabulate import tabulate
 from datetime import datetime
 
+from plans import REMOTE_DAY
+
 DAY_PLAN_FILEPATH = "plan.csv"
 
 app = typer.Typer()
@@ -20,12 +22,12 @@ def get_all(remote: bool = True) -> None:
         ```
     """
 
-    entries = []
-    with open(DAY_PLAN_FILEPATH, "r") as f:
-        csv_reader = csv.reader(f, delimiter=",")
-        for line in csv_reader:
-            entries.append(line)
-    print(tabulate(entries, headers='firstrow', tablefmt='fancy_grid'))
+    # entries = []
+    # with open(DAY_PLAN_FILEPATH, "r") as f:
+    #     csv_reader = csv.reader(f, delimiter=",")
+    #     for line in csv_reader:
+    #         entries.append(line)
+    print(tabulate(REMOTE_DAY, headers='firstrow', tablefmt='fancy_grid'))
 
 
 @app.command()
@@ -38,34 +40,31 @@ def get(remote: bool = True) -> None:
         python3 main.py get
         ```
     """
+    headers = REMOTE_DAY[0]
+    now = datetime.now()
+    for line in REMOTE_DAY[1:]:
 
-    with open(DAY_PLAN_FILEPATH, "r", newline="") as f:
-        reader = csv.DictReader(f, delimiter=",")
+        # Extract hours and minutes
+        start_time, end_time = line[1:3]
+        start_h = int(start_time[0:2])
+        start_m = int(start_time[3:5])
+        end_h = int(end_time[0:2])
+        end_m = int(end_time[3:5])
 
-        # Iterate over plan entries and find the one for the current time
-        now = datetime.now()
-        for line in reader:
+        start_time = datetime(
+            now.year, now.month, now.day, start_h, start_m)
+        end_time = datetime(
+            now.year, now.month, now.day, end_h, end_m)
 
-            # Extract hours and minutes
-            start_h = int(line["start_time"][0:2])
-            start_m = int(line["start_time"][3:5])
-            end_h = int(line["end_time"][0:2])
-            end_m = int(line["end_time"][3:5])
-
-            start_time = datetime(
-                now.year, now.month, now.day, start_h, start_m)
-            end_time = datetime(
-                now.year, now.month, now.day, end_h, end_m)
-
-            if start_time <= now and end_time > now:
-                # Found it!
-                print(tabulate([line.keys(), line.values()],
-                               headers="firstrow",
-                      tablefmt='fancy_grid'))
-                break
-        else:
-            raise Exception(
-                f"No entry found for current time! - {now}")
+        if start_time <= now and end_time > now:
+            # Found it!
+            print(tabulate([headers, line],
+                           headers="firstrow",
+                  tablefmt='fancy_grid'))
+            break
+    else:
+        raise Exception(
+            f"No entry found for current time! - {now}")
 
 
 if __name__ == "__main__":
