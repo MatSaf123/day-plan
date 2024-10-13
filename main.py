@@ -2,7 +2,9 @@ import csv
 import sys
 
 from datetime import datetime
-from pprint import pp
+from zoneinfo import ZoneInfo
+
+from tabulate import tabulate
 
 DAY_PLAN_FILEPATH = "plan.csv"
 
@@ -20,9 +22,10 @@ def get_all(remote: bool = True) -> None:
     entries = []
     with open(DAY_PLAN_FILEPATH, "r") as f:
         csv_reader = csv.reader(f, delimiter=",")
+        entries = []
         for line in csv_reader:
             entries.append(line)
-    pp(entries)
+    print(tabulate(entries, headers='firstrow', tablefmt='fancy_grid'))
 
 
 def get(remote: bool = True) -> None:
@@ -39,7 +42,7 @@ def get(remote: bool = True) -> None:
         reader = csv.DictReader(f, delimiter=",")
 
         # Iterate over plan entries and find the one for the current time
-        now = datetime.now()
+        now = datetime.now(ZoneInfo("Europe/Warsaw"))
         for line in reader:
 
             # Extract hours and minutes
@@ -49,14 +52,15 @@ def get(remote: bool = True) -> None:
             end_m = int(line["end_time"][3:5])
 
             start_time = datetime(
-                now.year, now.month, now.day, start_h, start_m)
+                now.year, now.month, now.day, start_h, start_m, now.second, now.microsecond, tzinfo=ZoneInfo("Europe/Warsaw"),)
             end_time = datetime(
-                now.year, now.month, now.day, end_h, end_m)
+                now.year, now.month, now.day, end_h, end_m, now.second, now.microsecond, tzinfo=ZoneInfo("Europe/Warsaw"),)
 
             if start_time <= now and end_time > now:
                 # Found it!
-                pp([list(line.keys()),
-                    list(line.values())])
+                print(tabulate([line.keys(), line.values()],
+                               headers="firstrow",
+                      tablefmt='fancy_grid'))
                 break
         else:
             raise Exception(
