@@ -65,7 +65,7 @@ def get(remote: bool = True) -> None:
                 break
         else:
             raise Exception(
-                "No entry found for current time! (probably something wrong with input file)")
+                f"No entry found for current time! - {now}")
 
 
 if __name__ == "__main__":
