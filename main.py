@@ -4,8 +4,6 @@ import csv
 from tabulate import tabulate
 from datetime import datetime
 
-from models import DayPlanEntry
-
 DAY_PLAN_FILEPATH = "plan.csv"
 
 app = typer.Typer()
@@ -47,22 +45,22 @@ def get(remote: bool = True) -> None:
         # Iterate over plan entries and find the one for the current time
         now = datetime.now()
         for line in reader:
-            plan_entry = DayPlanEntry.model_validate(line)
 
             # Extract hours and minutes
-            start_h = int(plan_entry.start_time[0:2])
-            start_m = int(plan_entry.start_time[3:5])
-            end_h = int(plan_entry.end_time[0:2])
-            end_m = int(plan_entry.end_time[3:5])
+            start_h = int(line["start_time"][0:2])
+            start_m = int(line["start_time"][3:5])
+            end_h = int(line["end_time"][0:2])
+            end_m = int(line["end_time"][3:5])
 
             start_time = datetime(
-                now.year, now.month, now.day, start_h, start_m)  # noqa
+                now.year, now.month, now.day, start_h, start_m)
             end_time = datetime(
                 now.year, now.month, now.day, end_h, end_m)
 
             if start_time <= now and end_time > now:
                 # Found it!
-                print(tabulate(plan_entry,
+                print(tabulate([line.keys(), line.values()],
+                               headers="firstrow",
                       tablefmt='fancy_grid'))
                 break
         else:
