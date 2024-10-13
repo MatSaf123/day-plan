@@ -1,15 +1,12 @@
-import typer
 import csv
+import sys
 
-from tabulate import tabulate
 from datetime import datetime
+from pprint import pp
 
 DAY_PLAN_FILEPATH = "plan.csv"
 
-app = typer.Typer()
 
-
-@app.command()
 def get_all(remote: bool = True) -> None:
     """Reads and prints all entries for today.
     If it's a work day, assumes it's remote-day by default.
@@ -25,10 +22,9 @@ def get_all(remote: bool = True) -> None:
         csv_reader = csv.reader(f, delimiter=",")
         for line in csv_reader:
             entries.append(line)
-    print(tabulate(entries, headers='firstrow', tablefmt='fancy_grid'))
+    pp(entries)
 
 
-@app.command()
 def get(remote: bool = True) -> None:
     """Reads the day plan entry based on the current time.
     If it's a work day, assumes it's remote-day by default.
@@ -59,9 +55,8 @@ def get(remote: bool = True) -> None:
 
             if start_time <= now and end_time > now:
                 # Found it!
-                print(tabulate([line.keys(), line.values()],
-                               headers="firstrow",
-                      tablefmt='fancy_grid'))
+                pp([list(line.keys()),
+                    list(line.values())])
                 break
         else:
             raise Exception(
@@ -69,4 +64,10 @@ def get(remote: bool = True) -> None:
 
 
 if __name__ == "__main__":
-    app()
+    func_name = sys.argv[1]
+    if func_name == "get":
+        get()
+    elif func_name == "get-all":
+        get_all()
+    else:
+        raise Exception(f"Unexpected option passed: {func_name}")
