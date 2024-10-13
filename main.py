@@ -21,9 +21,14 @@ def get_all(remote: bool = True) -> None:
     with open(DAY_PLAN_FILEPATH, "r") as f:
         csv_reader = csv.reader(f, delimiter=",")
         entries = []
+        # Skip the header line
+        next(csv_reader)
+        # We're displaying only name of the task and combined time to save screen space
         for line in csv_reader:
-            entries.append(line)
-    print(tabulate(entries, headers='firstrow', tablefmt='fancy_grid'))
+            name = line[0]
+            combined_date = f"{line[1]}-{line[2]}"
+            entries.append([name, combined_date])
+    print(tabulate(entries, headers=["Task", "Time"], tablefmt='simple_grid'))
 
 
 def get(remote: bool = True) -> None:
@@ -49,19 +54,28 @@ def get(remote: bool = True) -> None:
             end_h = int(line["end_time"][0:2])
             end_m = int(line["end_time"][3:5])
 
-            # Modifier to be added to the time in file (CEST) in order to turn it into UTC
-            modif = datetime.timedelta(hours=2)
+            # Modifier to be added to the time in file (CEST) in order to turn it into UTC.
+            # This is required because iSh does weird things and returns UTC for `dt.now()`
+            modifier = datetime.timedelta(hours=2)
 
             start_time = datetime.datetime(
-                now.year, now.month, now.day, start_h, start_m) - modif
+                now.year, now.month, now.day, start_h, start_m) - modifier
             end_time = datetime.datetime(
-                now.year, now.month, now.day, end_h, end_m) - modif
+                now.year, now.month, now.day, end_h, end_m) - modifier
 
             if start_time <= now and end_time > now:
                 # Found it!
-                print(tabulate([line.keys(), line.values()],
-                               headers="firstrow",
-                      tablefmt='fancy_grid'))
+                # We're transposing the table here: keys are in first column, values in the second
+                print(tabulate([
+                    ["Task", line["name"]],
+                    ["Start time", line["start_time"]],
+                    ["Finish time", line["end_time"]],
+                    ["Comment", line["comment"]],
+                ],
+                    tablefmt="simple_grid",
+                    maxcolwidths=[None, 16],
+                ))
+
                 break
         else:
             raise Exception(
