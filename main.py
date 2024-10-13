@@ -28,7 +28,9 @@ def get_all(remote: bool = True) -> None:
             name = line[0]
             combined_date = f"{line[1]}-{line[2]}"
             entries.append([name, combined_date])
-    print(tabulate(entries, headers=["Task", "Time"], tablefmt='simple_grid'))
+    print(tabulate(entries, headers=["Task", "Time"], tablefmt='simple_grid',
+                   maxcolwidths=[23, None],
+                   ))
 
 
 def get(remote: bool = True) -> None:
@@ -51,8 +53,8 @@ def get(remote: bool = True) -> None:
             # Extract hours and minutes
             start_h = int(line["start_time"][0:2])
             start_m = int(line["start_time"][3:5])
-            end_h = int(line["end_time"][0:2])
-            end_m = int(line["end_time"][3:5])
+            end_h = int(line["finish_time"][0:2])
+            end_m = int(line["finish_time"][3:5])
 
             # Modifier to be added to the time in file (CEST) in order to turn it into UTC.
             # This is required because iSh does weird things and returns UTC for `dt.now()`
@@ -60,20 +62,21 @@ def get(remote: bool = True) -> None:
 
             start_time = datetime.datetime(
                 now.year, now.month, now.day, start_h, start_m) - modifier
-            end_time = datetime.datetime(
+            finish_time = datetime.datetime(
                 now.year, now.month, now.day, end_h, end_m) - modifier
 
-            if start_time <= now and end_time > now:
+            if start_time <= now and finish_time > now:
                 # Found it!
                 # We're transposing the table here: keys are in first column, values in the second
                 print(tabulate([
                     ["Task", line["name"]],
                     ["Start time", line["start_time"]],
-                    ["Finish time", line["end_time"]],
+                    ["Finish time", line["finish_time"]],
                     ["Comment", line["comment"]],
                 ],
                     tablefmt="simple_grid",
-                    maxcolwidths=[None, 16],
+                    # 23 is the max width at which iSh view doesn't overflow together with 'headers column'
+                    maxcolwidths=[None, 23],
                 ))
 
                 break
